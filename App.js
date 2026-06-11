@@ -6,12 +6,13 @@ import * as SecureStore from 'expo-secure-store';
 // Importy ekranów
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
-import DashboardScreen from './src/screens/DashboardScreen';
+import DashboardScreen from './src/screens/DashboardScreenV2';
 import ScanReceiptScreen from './src/screens/ScanReceiptScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import ShopScreen from './src/screens/ShopScreen';
 import RedemptionHistoryScreen from './src/screens/RedemptionHistoryScreen';
+import PartnerStoresScreen from './src/screens/PartnerStoresScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -96,6 +97,11 @@ export default function App() {
               name="RedemptionHistory"
               component={RedemptionHistoryScreen}
               options={{ title: 'Historia wymian' }}
+            />
+            <Stack.Screen
+              name="PartnerStores"
+              component={PartnerStoresScreen}
+              options={{ title: 'Sklepy w pobliżu' }}
             />
           </>
         )}

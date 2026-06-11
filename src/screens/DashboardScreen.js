@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,15 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { userService, loyaltyService } from '../services/api';
+import * as Location from 'expo-location';
+import { userService, loyaltyService, shopService } from '../services/api';
+
+function formatDistance(km) {
+  if (km == null || Number.isNaN(km)) return '';
+  if (km < 1) return `${Math.round(km * 1000)} m`;
+  if (km < 10) return `${km.toFixed(1)} km`;
+  return `${Math.round(km)} km`;
+}
 
 export default function DashboardScreen({ navigation, onLogout }) {
   const [user, setUser] = useState(null);
@@ -16,8 +24,13 @@ export default function DashboardScreen({ navigation, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [nearbyStores, setNearbyStores] = useState([]);
+  const [nearbyLoading, setNearbyLoading] = useState(true);
+  const [nearbyPermissionDenied, setNearbyPermissionDenied] = useState(false);
+
   useEffect(() => {
     loadData();
+    loadNearbyStores();
   }, []);
 
   const loadData = async () => {
@@ -40,9 +53,39 @@ export default function DashboardScreen({ navigation, onLogout }) {
     }
   };
 
+  const loadNearbyStores = useCallback(async () => {
+    setNearbyLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setNearbyPermissionDenied(true);
+        setNearbyStores([]);
+        return;
+      }
+      setNearbyPermissionDenied(false);
+
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const data = await shopService.getNearbyStores(
+        position.coords.latitude,
+        position.coords.longitude,
+        50,
+        3
+      );
+      setNearbyStores(data.stores || []);
+    } catch (error) {
+      console.error('Error loading nearby stores:', error);
+      setNearbyStores([]);
+    } finally {
+      setNearbyLoading(false);
+    }
+  }, []);
+
   const onRefresh = () => {
     setRefreshing(true);
     loadData();
+    loadNearbyStores();
   };
 
 
@@ -118,6 +161,64 @@ export default function DashboardScreen({ navigation, onLogout }) {
           </Text>
         </View>
       )}
+
+      <View style={styles.nearbySection}>
+        <View style={styles.nearbyHeader}>
+          <Text style={styles.nearbyTitle}>📍 Sklepy w pobliżu</Text>
+          {!nearbyPermissionDenied && nearbyStores.length > 0 && (
+            <TouchableOpacity onPress={() => navigation.navigate('PartnerStores')}>
+              <Text style={styles.nearbySeeAll}>Zobacz wszystkie →</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {nearbyLoading ? (
+          <View style={styles.nearbyEmpty}>
+            <ActivityIndicator size="small" color="#007AFF" />
+          </View>
+        ) : nearbyPermissionDenied ? (
+          <TouchableOpacity style={styles.nearbyEmpty} onPress={loadNearbyStores}>
+            <Text style={styles.nearbyEmptyText}>
+              Włącz lokalizację, aby zobaczyć sklepy w Twojej okolicy
+            </Text>
+            <Text style={styles.nearbyEmptyAction}>Włącz lokalizację →</Text>
+          </TouchableOpacity>
+        ) : nearbyStores.length === 0 ? (
+          <TouchableOpacity
+            style={styles.nearbyEmpty}
+            onPress={() => navigation.navigate('PartnerStores')}
+          >
+            <Text style={styles.nearbyEmptyText}>Brak sklepów w promieniu 50 km</Text>
+            <Text style={styles.nearbyEmptyAction}>Zobacz wszystkie sklepy →</Text>
+          </TouchableOpacity>
+        ) : (
+          nearbyStores.map(store => {
+            const isDoublePoints = store.double_points_active === true;
+            return (
+              <TouchableOpacity
+                key={store.id}
+                style={styles.nearbyCard}
+                onPress={() => navigation.navigate('PartnerStores')}
+              >
+                <View style={styles.nearbyCardRow}>
+                  <Text style={styles.nearbyCardName} numberOfLines={1}>
+                    {store.name}
+                  </Text>
+                  <Text style={styles.nearbyCardDistance}>
+                    {formatDistance(store.distance_km)}
+                  </Text>
+                </View>
+                <Text style={styles.nearbyCardCity} numberOfLines={1}>
+                  {[store.city, store.chain_name].filter(Boolean).join(' · ')}
+                </Text>
+                {isDoublePoints && (
+                  <Text style={styles.nearbyCardPromo}>🔥 Promocja 2x punkty</Text>
+                )}
+              </TouchableOpacity>
+            );
+          })
+        )}
+      </View>
 
       <View style={styles.actions}>
         <TouchableOpacity
@@ -280,5 +381,76 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  nearbySection: {
+    marginHorizontal: 20,
+    marginBottom: 8,
+  },
+  nearbyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  nearbyTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  nearbySeeAll: {
+    fontSize: 13,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  nearbyEmpty: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  nearbyEmptyText: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  nearbyEmptyAction: {
+    fontSize: 13,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  nearbyCard: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  nearbyCardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  nearbyCardName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+    flex: 1,
+    marginRight: 8,
+  },
+  nearbyCardDistance: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#007AFF',
+  },
+  nearbyCardCity: {
+    fontSize: 12,
+    color: '#888',
+  },
+  nearbyCardPromo: {
+    fontSize: 12,
+    color: '#d4af37',
+    fontWeight: '700',
+    marginTop: 4,
   },
 });

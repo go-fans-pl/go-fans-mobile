@@ -18,10 +18,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gofans.app",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "NSCameraUsageDescription": "Aplikacja potrzebuje dostępu do aparatu, aby skanować paragony i dodawać punkty lojalnościowe.",
         "NSPhotoLibraryUsageDescription": "Aplikacja potrzebuje dostępu do galerii, aby móc wybierać zdjęcia paragonów do skanowania.",
+        "NSLocationWhenInUseUsageDescription": "Aplikacja używa lokalizacji, aby pokazać sklepy partnerskie w Twojej okolicy.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -34,7 +35,9 @@
       },
       "permissions": [
         "CAMERA",
-        "READ_EXTERNAL_STORAGE"
+        "READ_EXTERNAL_STORAGE",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
       ]
     },
     "web": {

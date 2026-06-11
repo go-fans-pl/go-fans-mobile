@@ -160,6 +160,14 @@ export const shopService = {
     console.log('getRedemptionHistory response:', response.data);
     return response.data.data?.redemptions || response.data.redemptions || response.data;
   },
+
+  // Sklepy partnerskie w pobliżu (sortowane po dystansie)
+  getNearbyStores: async (lat, lng, radiusKm = 50, limit = 20) => {
+    const response = await api.get('/shop/stores/nearby', {
+      params: { lat, lng, radius_km: radiusKm, limit },
+    });
+    return response.data.data || response.data;
+  },
 };
 
 export default api;
