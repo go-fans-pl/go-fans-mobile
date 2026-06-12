@@ -18,7 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gofans.app",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "NSCameraUsageDescription": "Aplikacja potrzebuje dostępu do aparatu, aby skanować paragony i dodawać punkty lojalnościowe.",
         "NSPhotoLibraryUsageDescription": "Aplikacja potrzebuje dostępu do galerii, aby móc wybierać zdjęcia paragonów do skanowania.",
@@ -51,6 +51,17 @@
       "eas": {
         "projectId": "7d1305df-7949-4b65-b5af-abe025f87f2a"
       }
-    }
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "buildReactNativeFromSource": true
+          }
+        }
+      ]
+    ],
+    "scheme": "gofans"
   }
 }

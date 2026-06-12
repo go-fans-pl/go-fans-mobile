@@ -1,0 +1,20 @@
+diff --git a/node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModule.mm b/node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModule.mm
+index 2a67797..c903b23 100644
+--- a/node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModule.mm
++++ b/node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios/ReactCommon/RCTTurboModule.mm
+@@ -435,7 +435,14 @@ void ObjCTurboModule::performVoidMethodInvocation(
+     @try {
+       [inv invokeWithTarget:strongModule];
+     } @catch (NSException *exception) {
+-      throw convertNSExceptionToJSError(runtime, exception, std::string{moduleName}, methodNameStr);
++      // RN#54859 / PR#55390: rethrowing from an async dispatch block is uncatchable
++      // and aborts the app on iOS 26. Log instead of crashing.
++      NSLog(
++          @"[RN#54859 patch] NSException in async void method %s.%s: %@ — %@",
++          moduleName,
++          methodNameStr.c_str(),
++          exception.name,
++          exception.reason);
+     } @finally {
+       [retainedObjectsForInvocation removeAllObjects];
+     }

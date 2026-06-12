@@ -2,6 +2,10 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import config from '../../config';
 
+// iOS 26 wymaga jawnego keychainService — bez niego expo-secure-store potrafi
+// rzucić NSException przy inicjalizacji (RN#54859)
+const KEYCHAIN_OPTIONS = { keychainService: 'com.gofans.app' };
+
 const api = axios.create({
   baseURL: config.API_BASE_URL,
   timeout: config.API_TIMEOUT,
@@ -13,7 +17,7 @@ const api = axios.create({
 // Request interceptor - dodaje token do każdego żądania
 api.interceptors.request.use(
   async (config) => {
-    const token = await SecureStore.getItemAsync('access_token');
+    const token = await SecureStore.getItemAsync('access_token', KEYCHAIN_OPTIONS);
     console.log('Token from storage:', token ? 'EXISTS' : 'MISSING');
     console.log('Request URL:', config.url);
     if (token) {
@@ -35,7 +39,7 @@ api.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       // Token wygasł - wyloguj użytkownika
-      await SecureStore.deleteItemAsync('access_token');
+      await SecureStore.deleteItemAsync('access_token', KEYCHAIN_OPTIONS);
     }
     return Promise.reject(error);
   }
@@ -60,7 +64,7 @@ export const authService = {
     console.log('Login response:', response.data);
     if (response.data.token) {
       console.log('Saving token to SecureStore');
-      await SecureStore.setItemAsync('access_token', response.data.token);
+      await SecureStore.setItemAsync('access_token', response.data.token, KEYCHAIN_OPTIONS);
       console.log('Token saved successfully');
     } else {
       console.log('NO TOKEN in response!');
@@ -69,7 +73,7 @@ export const authService = {
   },
 
   logout: async () => {
-    await SecureStore.deleteItemAsync('access_token');
+    await SecureStore.deleteItemAsync('access_token', KEYCHAIN_OPTIONS);
   },
 };
 
