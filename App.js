@@ -3,6 +3,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as SecureStore from 'expo-secure-store';
 
+import ErrorBoundary from './src/components/ErrorBoundary';
+
+// Musi być identyczny jak w src/services/api.js — token zapisany pod tym
+// keychainService da się odczytać tylko podając ten sam service (iOS).
+const KEYCHAIN_OPTIONS = { keychainService: 'com.gofans.app' };
+
 // Importy ekranów
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
@@ -26,7 +32,7 @@ export default function App() {
 
   const checkAuth = async () => {
     try {
-      const token = await SecureStore.getItemAsync('access_token');
+      const token = await SecureStore.getItemAsync('access_token', KEYCHAIN_OPTIONS);
       setIsAuthenticated(!!token);
     } catch (error) {
       console.error('Error checking auth:', error);
@@ -40,7 +46,7 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    await SecureStore.deleteItemAsync('access_token');
+    await SecureStore.deleteItemAsync('access_token', KEYCHAIN_OPTIONS);
     setIsAuthenticated(false);
   };
 
@@ -49,8 +55,9 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator>
+    <ErrorBoundary>
+      <NavigationContainer>
+        <Stack.Navigator>
         {!isAuthenticated ? (
           <>
             <Stack.Screen
@@ -105,7 +112,8 @@ export default function App() {
             />
           </>
         )}
-      </Stack.Navigator>
-    </NavigationContainer>
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ErrorBoundary>
   );
 }

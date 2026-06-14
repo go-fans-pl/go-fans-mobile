@@ -46,10 +46,14 @@ const REWARDS_FALLBACK = [
 ];
 
 function formatDistance(km) {
-  if (km == null || Number.isNaN(km)) return '';
-  if (km < 1) return `${Math.round(km * 1000)} m`;
-  if (km < 10) return `${km.toFixed(1)} km`;
-  return `${Math.round(km)} km`;
+  // Backend zwraca distance_km jako numeric → node-postgres serializuje to do STRINGA
+  // ("5.43"), a nie number. Bez koercji "5.43".toFixed() rzuca TypeError w renderze
+  // → niezłapany wyjątek → biały ekran. Dlatego najpierw twardo na Number.
+  const n = typeof km === 'number' ? km : parseFloat(km);
+  if (n == null || Number.isNaN(n)) return '';
+  if (n < 1) return `${Math.round(n * 1000)} m`;
+  if (n < 10) return `${n.toFixed(1)} km`;
+  return `${Math.round(n)} km`;
 }
 
 function formatDate(iso) {
